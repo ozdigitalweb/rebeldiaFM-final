@@ -3,7 +3,7 @@ import path from 'path';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { sql } from 'drizzle-orm';
-import { getDbConfig } from '../../src/db/index.js';
+import { getDbConfig } from '../../src/db/index.ts';
 
 async function executeMigrationsOnce(): Promise<{ applied: string[]; alreadyApplied: string[] }> {
   const applied: string[] = [];
@@ -118,9 +118,8 @@ export async function runMigrations(): Promise<{ applied: string[]; alreadyAppli
   }
 
   if (isProduction) {
-    console.error(`[Migrator] ❌ Falha crítica: migrações não puderam ser aplicadas após 5 tentativas em ambiente de produção.`);
+    console.error(`[Migrator] ⚠️ Falha na execução de migrações após ${maxRetries} tentativas em produção. O servidor continuará em execução com status de erro no /api/health (Norma 4.8).`);
     console.error(lastError);
-    process.exit(1);
   }
 
   throw lastError;

@@ -25,7 +25,7 @@ import {
   Sliders,
   Maximize2,
 } from 'lucide-react';
-import { radioAudio, DEMO_TRACKS, DemoTrack } from './utils/audioEngine';
+import { radioAudio, normalizeStreamUrl, DEMO_TRACKS, DemoTrack } from './utils/audioEngine';
 import {
   DEFAULT_RADIO_CONFIG,
   INITIAL_PROGRAMS,
@@ -141,7 +141,9 @@ export default function App() {
           parsed.slogan = 'radio LIVRE';
         }
         if (!parsed.streamUrl || !parsed.streamUrl.includes('hdradios.net:6806')) {
-          parsed.streamUrl = 'https://sv11.hdradios.net:6806';
+          parsed.streamUrl = 'https://sv11.hdradios.net:6806/;';
+        } else if (!parsed.streamUrl.endsWith('/;') && !parsed.streamUrl.includes('/stream') && !parsed.streamUrl.includes('/live')) {
+          parsed.streamUrl = parsed.streamUrl.replace(/\/?$/, '/;');
         }
         if (parsed.metadataDelaySeconds === undefined) {
           parsed.metadataDelaySeconds = 10;
@@ -351,10 +353,11 @@ export default function App() {
 
       if (backendConfig.status === 'fulfilled' && backendConfig.value) {
         const sc = backendConfig.value;
-        const validStreamUrl =
+        const rawUrl =
           sc.streamUrl && !sc.streamUrl.includes('zeno.fm')
             ? sc.streamUrl
-            : 'https://sv11.hdradios.net:6806';
+            : 'https://sv11.hdradios.net:6806/;';
+        const validStreamUrl = normalizeStreamUrl(rawUrl, false);
         setStationConfig((prev) => ({
           ...prev,
           name: sc.name || prev.name,
@@ -729,7 +732,7 @@ export default function App() {
   useEffect(() => {
     const audio = radioAudio.getAudioElement();
     audioRef.current = audio;
-    audio.src = stationConfig.streamUrl;
+    audio.src = normalizeStreamUrl(stationConfig.streamUrl);
     radioAudio.setVolumeAndMute(volume, isMuted);
     radioAudio.setEqualizer(equalizerPreset);
 
@@ -872,12 +875,10 @@ export default function App() {
     radioAudio.setEqualizer(equalizerPreset);
 
     const audio = radioAudio.getAudioElement();
-    const cacheBuster = `nocache=${Date.now()}`;
-    const freshStreamUrl = stationConfig.streamUrl.includes('?')
-      ? `${stationConfig.streamUrl}&${cacheBuster}`
-      : `${stationConfig.streamUrl}?${cacheBuster}`;
+    const freshStreamUrl = normalizeStreamUrl(stationConfig.streamUrl, true);
+    const directPlayableUrl = normalizeStreamUrl(stationConfig.streamUrl, false);
 
-    // Força a recarga imediata do stream para descartar buffers antigos e sincronizar em tempo real
+    // Força a recarga imediata do stream com Shoutcast mount válido e descarte de cache
     audio.src = freshStreamUrl;
     audio.load();
 
@@ -894,9 +895,9 @@ export default function App() {
       setIsBuffering(false);
       setHasError(false);
     }).catch((err) => {
-      console.warn('Tentativa com cachebuster falhou, tentando reconectar com URL direta:', err);
-      // Fallback: recarga imediata com a URL direta do streaming
-      audio.src = stationConfig.streamUrl;
+      console.warn('Tentativa com cachebuster falhou, tentando reconectar com URL direta do Shoutcast:', err);
+      // Fallback: recarga imediata com a URL direta normalizada do streaming
+      audio.src = directPlayableUrl;
       audio.load();
       audio.play().then(() => {
         setIsPlaying(true);
@@ -904,9 +905,25 @@ export default function App() {
         setHasError(false);
       }).catch((fallbackErr) => {
         console.error('Falha na conexão do streaming ao vivo:', fallbackErr);
-        setIsBuffering(false);
-        setIsPlaying(false);
-        setHasError(true);
+        // Fallback final: tenta sem crossOrigin caso o navegador tenha bloqueado CORS
+        try {
+          audio.removeAttribute('crossorigin');
+          audio.src = directPlayableUrl;
+          audio.load();
+          audio.play().then(() => {
+            setIsPlaying(true);
+            setIsBuffering(false);
+            setHasError(false);
+          }).catch(() => {
+            setIsBuffering(false);
+            setIsPlaying(false);
+            setHasError(true);
+          });
+        } catch {
+          setIsBuffering(false);
+          setIsPlaying(false);
+          setHasError(true);
+        }
       });
     });
   }, [stationConfig.streamUrl, volume, isMuted, equalizerPreset]);

@@ -31,6 +31,28 @@ export const DEMO_TRACKS: DemoTrack[] = [
   },
 ];
 
+/**
+ * Normaliza a URL de streaming para garantir que servidores Shoutcast/Icecast
+ * entreguem o fluxo contínuo de áudio (audio/mpeg) em vez da página HTML de redirect.
+ */
+export function normalizeStreamUrl(url: string, withCacheBuster = false): string {
+  if (!url) return 'https://sv11.hdradios.net:6806/;';
+  let cleanUrl = url.trim();
+
+  // Para Shoutcast na porta :6806 ou sem path de montagem, garantir /;
+  const urlWithoutQuery = cleanUrl.split('?')[0];
+  if (/:\d{4,5}(\/?)$/.test(urlWithoutQuery)) {
+    cleanUrl = urlWithoutQuery.replace(/\/?$/, '/;');
+  }
+
+  if (withCacheBuster) {
+    const buster = `nocache=${Date.now()}`;
+    return cleanUrl.includes('?') ? `${cleanUrl}&${buster}` : `${cleanUrl}?${buster}`;
+  }
+
+  return cleanUrl;
+}
+
 class RadioAudioEngine {
   private audio: HTMLAudioElement | null = null;
   private audioContext: AudioContext | null = null;
@@ -56,7 +78,9 @@ class RadioAudioEngine {
     if (!this.audio) {
       this.audio = new Audio();
       this.audio.preload = 'auto';
-      this.audio.crossOrigin = 'anonymous';
+      try {
+        this.audio.crossOrigin = 'anonymous';
+      } catch {}
     }
     return this.audio;
   }

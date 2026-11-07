@@ -2,13 +2,13 @@ import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
-import { db, isDatabaseConfigured } from './src/db/index.js';
-import { songRequests, shoutouts, schedule, users, stationSettings } from './src/db/schema.js';
-import { getOrCreateUser } from './src/db/users.js';
-import { requireAuth, optionalAuth, AuthRequest } from './src/middleware/auth.js';
+import { db, isDatabaseConfigured } from './src/db/index.ts';
+import { songRequests, shoutouts, schedule, users, stationSettings } from './src/db/schema.ts';
+import { getOrCreateUser } from './src/db/users.ts';
+import { requireAuth, optionalAuth, type AuthRequest } from './src/middleware/auth.ts';
 import { desc, eq, sql } from 'drizzle-orm';
-import { OFFICIAL_HOSTS, OFFICIAL_SCHEDULE_ITEMS, getProgramSeedKey } from './src/data/officialData.js';
-import { runMigrations } from './server/migrations/migrator.js';
+import { OFFICIAL_HOSTS, OFFICIAL_SCHEDULE_ITEMS, getProgramSeedKey } from './src/data/officialData.ts';
+import { runMigrations } from './server/migrations/migrator.ts';
 
 // Password hashing (scrypt) & verification
 function hashPassword(password: string): string {
@@ -63,7 +63,7 @@ function sanitizeHostAccount(acc: any): SafeHostAccount {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // Habilitar trust proxy para proxy reverso Apache cPanel (Norma 6.2)
   app.set('trust proxy', true);
@@ -102,8 +102,13 @@ async function startServer() {
     });
   };
 
-  // Inicialização do Banco de Dados: Migrações Numeradas e Seed Idempotente
-  if (isDbConfigured) {
+  // Inicialização do Banco de Dados: Migrações Numeradas e Seed Idempotente (não-bloqueante no boot HTTP)
+  const initDatabaseBoot = async () => {
+    if (!isDbConfigured) {
+      console.log('ℹ️ Executando em modo autônomo sem PostgreSQL (dados e fotos oficiais servidos em memória).');
+      return;
+    }
+
     try {
       // 1. Executar migrações numeradas e idempotentes (tabela schema_migrations - Norma 5.2 / 5.6)
       await runMigrations();
@@ -177,13 +182,46 @@ async function startServer() {
       } else {
         console.log('🎙️ Locutores oficiais verificados no banco (senhas e dados existentes preservados).');
       }
+
+      // 5. Garantir streamUrl oficial com sufixo /; para Shoutcast (evita retorno de página HTML de redirect)
+      const [streamRow] = await db
+        .select()
+        .from(stationSettings)
+        .where(eq(stationSettings.key, 'streamUrl'))
+        .limit(1);
+
+      if (!streamRow?.value) {
+        await db
+          .insert(stationSettings)
+          .values({
+            key: 'streamUrl',
+            value: 'https://sv11.hdradios.net:6806/;',
+            updatedAt: new Date(),
+          })
+          .onConflictDoNothing();
+        console.log('📻 Stream URL configurada no banco: https://sv11.hdradios.net:6806/;');
+      } else if (!streamRow.value.endsWith('/;') && !streamRow.value.includes('/stream') && !streamRow.value.includes('/live')) {
+        await db
+          .update(stationSettings)
+          .set({
+            value: streamRow.value.replace(/\/?$/, '/;'),
+            updatedAt: new Date(),
+          })
+          .where(eq(stationSettings.key, 'streamUrl'));
+        console.log('📻 Stream URL normalizada no banco com sufixo /;');
+      }
+      dbBootState = 'ok';
     } catch (err) {
       dbBootState = 'erro';
       console.warn('[DB Boot Notice] Aviso durante verificação de migrações/seed:', err);
     }
-  } else {
-    console.log('ℹ️ Executando em modo autônomo sem PostgreSQL (dados e fotos oficiais servidos em memória).');
-  }
+  };
+
+  // Inicia o processo de migração/seed assincronamente sem bloquear o início imediato do servidor HTTP
+  initDatabaseBoot().catch((err) => {
+    dbBootState = 'erro';
+    console.warn('[DB Boot Notice] Erro na inicialização assíncrona do banco:', err);
+  });
 
   // API Health com relatório real do banco (Norma 4.9: db: ok | memoria | erro)
   app.get('/api/health', async (req, res) => {
@@ -362,13 +400,24 @@ async function startServer() {
     });
   });
 
+  // Helper para normalizar URL de streaming no servidor (Shoutcast exige /; para evitar HTML redirect)
+  const normalizeStreamUrlServer = (url?: string): string => {
+    if (!url) return 'https://sv11.hdradios.net:6806/;';
+    const clean = url.trim();
+    const urlWithoutQuery = clean.split('?')[0];
+    if (/:\d{4,5}(\/?)$/.test(urlWithoutQuery)) {
+      return urlWithoutQuery.replace(/\/?$/, '/;');
+    }
+    return clean;
+  };
+
   // --- Station Settings & Logo Persistence Endpoints ---
-  app.get('/api/station-config', async (req, res) => {
+  app.get(['/api/station-config', '/api/settings'], async (req, res) => {
     if (!isDbConfigured) {
       return res.json({
         name: 'Rebeldia FM',
         slogan: 'radio LIVRE',
-        streamUrl: 'https://sv11.hdradios.net:6806',
+        streamUrl: 'https://sv11.hdradios.net:6806/;',
         whatsappNumber: '5548991984678',
         instagramUrl: 'https://instagram.com/rebeldiafm',
         email: 'radio@rebeldiafm.com.br',
@@ -390,7 +439,7 @@ async function startServer() {
       res.json({
         name: configMap.name || 'Rebeldia FM',
         slogan: configMap.slogan || 'radio LIVRE',
-        streamUrl: configMap.streamUrl || 'https://sv11.hdradios.net:6806',
+        streamUrl: normalizeStreamUrlServer(configMap.streamUrl),
         whatsappNumber: configMap.whatsappNumber || '5548991984678',
         instagramUrl: configMap.instagramUrl || 'https://instagram.com/rebeldiafm',
         email: configMap.email || 'radio@rebeldiafm.com.br',
@@ -408,7 +457,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/station-config', async (req, res) => {
+  app.post(['/api/station-config', '/api/settings'], async (req, res) => {
     try {
       const updates = req.body;
       const validKeys = [

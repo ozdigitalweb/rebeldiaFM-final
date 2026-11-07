@@ -33,10 +33,9 @@ export const DEFAULT_REB_PROGRAM: ProgramItem = {
 export const DEFAULT_RADIO_CONFIG: RadioStationConfig = {
   name: 'Rebeldia FM',
   slogan: 'radio LIVRE',
-  streamUrl: 'https://sv11.hdradios.net:6806',
+  streamUrl: 'https://sv11.hdradios.net:6806/;',
   alternativeStreams: [
-    { label: 'Stream Oficial Rebeldia FM', url: 'https://sv11.hdradios.net:6806' },
-    { label: 'Stream Shoutcast Direct (;)', url: 'https://sv11.hdradios.net:6806/;' },
+    { label: 'Stream Oficial Rebeldia FM (;)', url: 'https://sv11.hdradios.net:6806/;' },
     { label: 'Stream Mount Live (/stream)', url: 'https://sv11.hdradios.net:6806/stream' },
     { label: 'Stream AAC / Live', url: 'https://sv11.hdradios.net:6806/live' },
     { label: 'Stream MP3 HD (;stream.mp3)', url: 'https://sv11.hdradios.net:6806/;stream.mp3' },

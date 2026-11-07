@@ -1,4 +1,4 @@
-import { HostAccount } from '../types.js';
+import type { HostAccount } from '../types.ts';
 
 export const OFFICIAL_HOSTS: HostAccount[] = [
   {
