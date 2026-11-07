@@ -1605,9 +1605,13 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Play/Pause Overlay Icon on hover */}
+                  {/* Play/Pause Overlay Icon on hover / when stopped */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/75 backdrop-blur-md border border-white/25 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition shadow-xl">
+                    <div
+                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/75 backdrop-blur-md border border-white/25 flex items-center justify-center text-white transition shadow-xl ${
+                        isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-85 group-hover:opacity-100'
+                      }`}
+                    >
                       {isPlaying ? <Pause className="w-7 h-7 fill-white" /> : <Play className="w-7 h-7 fill-white ml-0.5" />}
                     </div>
                   </div>
@@ -1677,47 +1681,6 @@ export default function App() {
                       💬 {currentLiveProgram.takeoverNotes}
                     </p>
                   )}
-                </div>
-
-                {/* Play / Stop Big Controls */}
-                <div className="flex items-center gap-5 pt-1">
-                  <button
-                    onClick={reloadStream}
-                    className="p-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white transition shadow-lg cursor-pointer"
-                    title="Reconectar Stream"
-                  >
-                    <RefreshCw className={`w-5 h-5 ${isBuffering ? 'animate-spin' : ''}`} />
-                  </button>
-
-                  <button
-                    onClick={togglePlay}
-                    className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition transform active:scale-95 bg-white text-black hover:bg-zinc-200 cursor-pointer"
-                    aria-label={isPlaying ? 'Pausar rádio' : 'Ouvir rádio ao vivo'}
-                  >
-                    {isBuffering ? (
-                      <RefreshCw className="w-8 h-8 animate-spin text-black" />
-                    ) : isPlaying ? (
-                      <Pause className="w-9 h-9 fill-black text-black" />
-                    ) : (
-                      <Play className="w-9 h-9 fill-black text-black ml-1" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('requests')}
-                    className="p-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white transition shadow-lg cursor-pointer"
-                    title="Pedir Música no Ar"
-                  >
-                    <Music className="w-5 h-5" />
-                  </button>
-
-                  <button
-                    onClick={() => setIsMusicModeOpen(true)}
-                    className="p-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-amber-400/40 text-zinc-300 hover:text-amber-300 transition shadow-lg cursor-pointer"
-                    title="Abrir MODO MÚSICA (Tela Cheia)"
-                  >
-                    <Maximize2 className="w-5 h-5" />
-                  </button>
                 </div>
 
                 {/* Error Banner */}

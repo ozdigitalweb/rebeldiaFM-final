@@ -75,55 +75,28 @@ export const GlobalPlayerBar: React.FC<GlobalPlayerBarProps> = ({
       className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-2xl border-t border-white/15 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] transition-all px-[10px] sm:px-[30px]"
     >
       <div className="w-full py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left Section: Program & Track Info */}
-        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 max-w-[40%] sm:max-w-xs md:max-w-sm">
-          {/* Mini Vinyl / Album Art Play/Pause Button */}
+        {/* Left Section (Balancing Spacer) */}
+        <div className="hidden lg:flex flex-1 items-center justify-start">
           <button
-            type="button"
-            onClick={onTogglePlay}
-            className="relative cursor-pointer shrink-0 group focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-full active:scale-95 transition-transform touch-manipulation"
-            title={isPlaying ? 'Pausar rádio' : 'Tocar rádio'}
-            aria-label={isPlaying ? 'Pausar rádio' : 'Tocar rádio'}
+            onClick={onReloadStream}
+            className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 border border-white/5 text-zinc-400 hover:text-white transition text-xs flex items-center gap-1.5 cursor-pointer"
+            title="Reconectar transmissão de áudio"
+            aria-label="Reconectar transmissão de áudio"
           >
-            <div
-              className={`w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-zinc-900 border border-zinc-700 p-0.5 shadow-md flex items-center justify-center overflow-hidden transition-all pointer-events-none ${
-                isPlaying ? 'animate-pulse-burst border-white/40' : ''
-              }`}
-            >
-              {artworkUrl || currentLiveProgram?.avatarUrl ? (
-                <img
-                  src={artworkUrl || currentLiveProgram?.avatarUrl}
-                  alt={streamMetadata?.rawTitle || currentLiveProgram?.title || 'No Ar'}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full rounded-full object-cover pointer-events-none"
-                />
-              ) : (
-                <div className="w-full h-full rounded-full bg-zinc-950 flex items-center justify-center pointer-events-none">
-                  <Music className="w-4 h-4 text-zinc-500" />
-                </div>
-              )}
-            </div>
-
-            {/* Quick Play overlay icon */}
-            <div className="absolute inset-0 bg-black/55 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity pointer-events-none">
-              {isPlaying ? (
-                <Pause className="w-4 h-4 fill-white text-white" />
-              ) : (
-                <Play className="w-4 h-4 fill-white text-white ml-0.5" />
-              )}
-            </div>
-
-            {/* Subtle mobile play indicator badge when stopped so users know it is interactive */}
-            {!isPlaying && (
-              <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white text-black flex items-center justify-center shadow pointer-events-none sm:hidden border border-black/30">
-                <Play className="w-2.5 h-2.5 fill-black ml-0.5" />
-              </span>
-            )}
+            <RefreshCw className={`w-3.5 h-3.5 ${isBuffering ? 'animate-spin text-amber-400' : ''}`} />
+            <span className="text-[11px] font-medium hidden xl:inline">Reconectar</span>
           </button>
+        </div>
 
-          {/* Text Metadata */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 mb-0.5">
+        {/* Center Section: Program & Track Info (Círculo com Foto Transformado em Botão de Player + Dados Centralizados) */}
+        <div className="flex items-center justify-center gap-3 sm:gap-4 flex-1 lg:flex-initial max-w-full">
+          {/* Dados da Faixa Alinhados à Direita (apontando para o botão player) */}
+          <div className="min-w-0 flex flex-col justify-center items-end text-right">
+            <div className="flex items-center justify-end gap-1.5 mb-0.5">
+              <span className="text-[10px] font-mono text-zinc-400 truncate hidden xs:inline">
+                {stationConfig.bitrate}
+              </span>
+
               <span
                 className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider ${
                   isPlaying
@@ -142,7 +115,7 @@ export const GlobalPlayerBar: React.FC<GlobalPlayerBarProps> = ({
                       : 'bg-zinc-600'
                   }`}
                 />
-                <span className="hidden xs:inline">
+                <span>
                   {isPlaying
                     ? 'AO VIVO'
                     : isBuffering
@@ -150,15 +123,11 @@ export const GlobalPlayerBar: React.FC<GlobalPlayerBarProps> = ({
                     : 'OFFLINE'}
                 </span>
               </span>
-
-              <span className="text-[10px] font-mono text-zinc-400 truncate hidden md:inline">
-                {stationConfig.bitrate}
-              </span>
             </div>
 
             <h4
               onClick={onGoToPlayerTab}
-              className="text-xs sm:text-sm font-bold text-white truncate cursor-pointer hover:underline"
+              className="text-xs sm:text-sm font-bold text-white truncate cursor-pointer hover:underline max-w-[180px] xs:max-w-[240px] sm:max-w-xs md:max-w-sm lg:max-w-md text-right"
               title={
                 streamMetadata?.hasLiveMetadata
                   ? `${streamMetadata.song} - ${streamMetadata.artist}`
@@ -176,7 +145,7 @@ export const GlobalPlayerBar: React.FC<GlobalPlayerBarProps> = ({
 
             <p
               onClick={onGoToPlayerTab}
-              className="text-[10px] sm:text-xs text-zinc-400 truncate cursor-pointer hover:text-zinc-200"
+              className="text-[10px] sm:text-xs text-zinc-400 truncate cursor-pointer hover:text-zinc-200 max-w-[180px] xs:max-w-[240px] sm:max-w-xs md:max-w-sm lg:max-w-md text-right"
             >
               {streamMetadata?.hasLiveMetadata
                 ? streamMetadata.artist
@@ -185,60 +154,66 @@ export const GlobalPlayerBar: React.FC<GlobalPlayerBarProps> = ({
                 : stationConfig.slogan}
             </p>
           </div>
-        </div>
 
-        {/* Center Section: Playback Controls & Waveform */}
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          {/* Reconnect button */}
+          {/* Círculo com a foto transformado no botão do player */}
           <button
-            onClick={onReloadStream}
-            className="p-2 sm:p-2.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white transition shadow-sm hidden xs:flex items-center justify-center"
-            title="Reconectar áudio"
-            aria-label="Reconectar áudio"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isBuffering ? 'animate-spin text-white' : ''}`} />
-          </button>
-
-          {/* Main Big Play / Pause Button */}
-          <button
+            type="button"
             onClick={onTogglePlay}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white hover:bg-zinc-200 text-black flex items-center justify-center shrink-0 shadow-xl transition transform active:scale-95"
-            aria-label={isPlaying ? 'Pausar rádio' : 'Ouvir rádio ao vivo'}
+            className="relative cursor-pointer shrink-0 group focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-full active:scale-95 transition-transform touch-manipulation"
+            title={isPlaying ? 'Pausar transmissão' : 'Tocar transmissão ao vivo'}
+            aria-label={isPlaying ? 'Pausar transmissão' : 'Tocar transmissão ao vivo'}
           >
-            {isBuffering ? (
-              <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-black" />
-            ) : isPlaying ? (
-              <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-black text-black" />
-            ) : (
-              <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-black text-black ml-0.5" />
+            <div
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-zinc-900 border p-0.5 shadow-xl flex items-center justify-center overflow-hidden transition-all ${
+                isPlaying
+                  ? 'border-amber-400/80 shadow-amber-500/20 shadow-lg animate-pulse-burst'
+                  : 'border-white/20 group-hover:border-white/50'
+              }`}
+            >
+              {artworkUrl || currentLiveProgram?.avatarUrl ? (
+                <img
+                  src={artworkUrl || currentLiveProgram?.avatarUrl}
+                  alt={streamMetadata?.rawTitle || currentLiveProgram?.title || 'No Ar'}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full rounded-full object-cover pointer-events-none"
+                />
+              ) : (
+                <div className="w-full h-full rounded-full bg-zinc-950 flex items-center justify-center pointer-events-none">
+                  <Music className="w-5 h-5 text-zinc-500" />
+                </div>
+              )}
+            </div>
+
+            {/* Play/Pause Overlay Icon */}
+            <div
+              className={`absolute inset-0 rounded-full flex items-center justify-center transition-opacity ${
+                isBuffering
+                  ? 'bg-black/60 opacity-100'
+                  : isPlaying
+                  ? 'bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100'
+                  : 'bg-black/55 opacity-90 group-hover:opacity-100'
+              }`}
+            >
+              {isBuffering ? (
+                <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-white" />
+              ) : isPlaying ? (
+                <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-white text-white drop-shadow" />
+              ) : (
+                <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-white text-white ml-0.5 drop-shadow" />
+              )}
+            </div>
+
+            {/* Selo Indicador de Play quando pausado para garantir clareza visual imediata */}
+            {!isPlaying && !isBuffering && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full bg-amber-400 text-black flex items-center justify-center shadow-md border border-black/40 pointer-events-none">
+                <Play className="w-2.5 h-2.5 fill-black ml-0.5" />
+              </span>
             )}
           </button>
-
-          {/* Mini Live Audio Equalizer Animation Bars */}
-          <div
-            onClick={onGoToPlayerTab}
-            className="hidden sm:flex items-end gap-1 h-6 px-2 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 cursor-pointer"
-            title="Equalizador Digital"
-          >
-            {[0.4, 0.8, 1, 0.6, 0.9, 0.5, 0.7].map((factor, idx) => (
-              <span
-                key={idx}
-                className={`w-1 rounded-full bg-white transition-all duration-200 ${
-                  isPlaying
-                    ? 'animate-pulse'
-                    : 'h-1.5 opacity-30'
-                }`}
-                style={{
-                  height: isPlaying ? `${Math.max(4, Math.min(22, factor * 22))}px` : '4px',
-                  animationDelay: `${idx * 0.12}s`,
-                }}
-              />
-            ))}
-          </div>
         </div>
 
         {/* Right Section: Volume & Utilities */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-3 shrink-0">
           {/* Volume Controls (Desktop & Tablets) */}
           <div className="hidden lg:flex items-center gap-2 bg-zinc-900/90 px-3 py-1.5 rounded-xl border border-zinc-800">
             <button
