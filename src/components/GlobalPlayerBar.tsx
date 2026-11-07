@@ -75,18 +75,47 @@ export const GlobalPlayerBar: React.FC<GlobalPlayerBarProps> = ({
       className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/95 backdrop-blur-2xl border-t border-white/15 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] transition-all px-[10px] sm:px-[30px]"
     >
       <div className="w-full py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left Section (Balancing Spacer) */}
-        <div className="hidden lg:flex flex-1 items-center justify-start">
-          <button
-            onClick={onReloadStream}
-            className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 border border-white/5 text-zinc-400 hover:text-white transition text-xs flex items-center gap-1.5 cursor-pointer"
-            title="Reconectar transmissão de áudio"
-            aria-label="Reconectar transmissão de áudio"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isBuffering ? 'animate-spin text-amber-400' : ''}`} />
-            <span className="text-[11px] font-medium hidden xl:inline">Reconectar</span>
-          </button>
-        </div>
+        {/* Left Section: Volume Controls (Desktop & Tablets) + Reconectar */}
+                <div className="hidden md:flex flex-1 items-center justify-start gap-3">
+                  {/* Volume Controls */}
+                  <div className="items-center gap-2 bg-zinc-900/90 px-3 py-1.5 rounded-xl border border-zinc-800">
+                    <button
+                      onClick={onToggleMute}
+                      className="text-zinc-400 hover:text-white transition"
+                      aria-label={isMuted ? 'Ativar som' : 'Silenciar som'}
+                    >
+                      {isMuted || volume === 0 ? (
+                        <VolumeX className="w-4 h-4 text-white" />
+                      ) : (
+                        <Volume2 className="w-4 h-4" />
+                      )}
+                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={isMuted ? 0 : volume}
+                      onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+                      className="w-16 xl:w-24 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-white"
+                      aria-label="Controle de volume"
+                    />
+                    <span className="text-[10px] font-mono text-zinc-400 w-7 text-right">
+                      {Math.round((isMuted ? 0 : volume) * 100)}%
+                    </span>
+                  </div>
+
+                  {/* Reconectar button */}
+                  <button
+                    onClick={onReloadStream}
+                    className="p-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800 border border-white/5 text-zinc-400 hover:text-white transition text-xs flex items-center gap-1.5 cursor-pointer"
+                    title="Reconectar transmissão de áudio"
+                    aria-label="Reconectar transmissão de áudio"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isBuffering ? 'animate-spin text-amber-400' : ''}`} />
+                    <span className="text-[11px] font-medium hidden xl:inline">Reconectar</span>
+                  </button>
+                </div>
 
         {/* Center Section: Program & Track Info (Círculo com Foto Transformado em Botão de Player + Dados Centralizados) */}
         <div className="flex items-center justify-center gap-3 sm:gap-4 flex-1 lg:flex-initial max-w-full">
@@ -212,37 +241,9 @@ export const GlobalPlayerBar: React.FC<GlobalPlayerBarProps> = ({
           </button>
         </div>
 
-        {/* Right Section: Volume & Utilities */}
-        <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-3 shrink-0">
-          {/* Volume Controls (Desktop & Tablets) */}
-          <div className="hidden lg:flex items-center gap-2 bg-zinc-900/90 px-3 py-1.5 rounded-xl border border-zinc-800">
-            <button
-              onClick={onToggleMute}
-              className="text-zinc-400 hover:text-white transition"
-              aria-label={isMuted ? 'Ativar som' : 'Silenciar som'}
-            >
-              {isMuted || volume === 0 ? (
-                <VolumeX className="w-4 h-4 text-white" />
-              ) : (
-                <Volume2 className="w-4 h-4" />
-              )}
-            </button>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={isMuted ? 0 : volume}
-              onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-              className="w-16 xl:w-24 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-white"
-              aria-label="Controle de volume"
-            />
-            <span className="text-[10px] font-mono text-zinc-400 w-7 text-right">
-              {Math.round((isMuted ? 0 : volume) * 100)}%
-            </span>
-          </div>
-
-          {/* Pedir Música Shortcut */}
+        {/* Right Section: Utilities */}
+                <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-3 shrink-0">
+                  {/* Pedir Música Shortcut */}
           <button
             onClick={onOpenRequests}
             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 hover:text-white text-xs font-bold transition"
